@@ -2,8 +2,8 @@ from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo, ObjectId, MongoClient
 from flask_cors import CORS
 
-cluster = "mongodb+srv://Diego:1234@cluster0.irkae.mongodb.net/users?retryWrites=true&w=majority"
-client = MongoClient(cluster)
+#cluster = "mongodb+srv://Diego:1234@cluster0.irkae.mongodb.net/users?retryWrites=true&w=majority"
+#client = MongoClient(cluster)
 
 app = Flask(__name__)
 # app.config["MONGO_URI"] = "mongodb://localhost/pythonreactdb"
@@ -11,7 +11,19 @@ app = Flask(__name__)
 
 CORS(app)
 
-db = client.users.users
+#db = client.users.users
+
+
+def getBD():
+    client = MongoClient(
+    host="users_mongodb",
+    port=27017,
+    username="root",
+    password="pass",
+    authSource="admin"
+    )
+    db = client["users_db"]
+    return db
 
 
 @app.route("/")
@@ -21,9 +33,9 @@ def saludar():
 
 @app.route("/users", methods=["GET"])
 def getUsers():
+    db = getBD()
     users = []
-
-    for doc in db.find():
+    for doc in db.users_db.find():
         users.append({
             "_id": str(ObjectId(doc["_id"])),
             "username": doc["username"],
@@ -35,8 +47,8 @@ def getUsers():
 
 @app.route("/users", methods=["POST"])
 def crea_user():
-    # print(request.json)
-    usuario_insertado = db.insert_one({
+    db = getBD()
+    usuario_insertado = db.users_db.insert_one({
         "username": request.json["username"],
         "email": request.json["email"],
         "password": request.json["password"]
@@ -47,7 +59,8 @@ def crea_user():
 
 @app.route("/user/<id>", methods=["GET"])
 def getUser(id):
-    user = db.find_one({"_id": ObjectId(id)})
+    db = getBD()
+    user = db.users_db.find_one({"_id": ObjectId(id)})
     return jsonify({
         "_id": str(ObjectId(user["_id"])),
         "username": user["username"],
@@ -58,15 +71,17 @@ def getUser(id):
 
 @app.route("/users/<id>", methods=["DELETE"])
 def delete_user(id):
-    db.delete_one({"_id": ObjectId(id)})
+    db = getBD()
+    db.users_db.delete_one({"_id": ObjectId(id)})
     return jsonify({"mensaje": "usuario eliminado"})
 
 
 @app.route("/users/<id>", methods=["PUT"])
 def update_user(id):
+    db = getBD()
     print(id)
     print(request.json)
-    db.update_one({"_id": ObjectId(id)}, {"$set": {
+    db.users_db.update_one({"_id": ObjectId(id)}, {"$set": {
         "username": request.json["username"],
         "password": request.json["password"],
         "email": request.json["email"]
@@ -75,4 +90,4 @@ def update_user(id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0")
+    app.run(debug=True, host="0.0.0.0", port=5000)
