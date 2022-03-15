@@ -1,14 +1,22 @@
 from flask import Flask, request, jsonify
-from flask_pymongo import PyMongo, ObjectId
+from flask_pymongo import PyMongo, ObjectId, MongoClient
 from flask_cors import CORS
 
+cluster = "mongodb+srv://Diego:1234@cluster0.irkae.mongodb.net/users?retryWrites=true&w=majority"
+client = MongoClient(cluster)
+
 app = Flask(__name__)
-app.config["MONGO_URI"] = "mongodb://localhost/pythonreactdb"
-mongo = PyMongo(app)
+# app.config["MONGO_URI"] = "mongodb://localhost/pythonreactdb"
+# mongo = PyMongo(app)
 
 CORS(app)
 
-db = mongo.db.users
+db = client.users.users
+
+
+@app.route("/")
+def saludar():
+    return "Estoy corriendo"
 
 
 @app.route("/users", methods=["GET"])
@@ -27,7 +35,7 @@ def getUsers():
 
 @app.route("/users", methods=["POST"])
 def crea_user():
-    #print(request.json)
+    # print(request.json)
     usuario_insertado = db.insert_one({
         "username": request.json["username"],
         "email": request.json["email"],
@@ -51,7 +59,7 @@ def getUser(id):
 @app.route("/users/<id>", methods=["DELETE"])
 def delete_user(id):
     db.delete_one({"_id": ObjectId(id)})
-    return jsonify({"mensaje":"usuario eliminado"})
+    return jsonify({"mensaje": "usuario eliminado"})
 
 
 @app.route("/users/<id>", methods=["PUT"])
@@ -63,8 +71,8 @@ def update_user(id):
         "password": request.json["password"],
         "email": request.json["email"]
     }})
-    return jsonify({"mensaje":"usuario actualizado"})
+    return jsonify({"mensaje": "usuario actualizado"})
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
